@@ -57,18 +57,20 @@ def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint
 # In the plane, the Euclidean minimum spanning tree is a subgraph of the Delaunay triangulation. Using this fact,
 # the Euclidean minimum spanning tree for a given set of planar points may be found in time
 # O(n log n), using algorithms based on comparisons of simple combinations of input coordinates.
-def connect_points_MST(pointsCollection: list[(int, int, int)]):
-    delaunay_triangulation(pointsCollection)
+def connect_points_EMST(pointsCollection: list[(int, int, int)]):
+    potential_edges = delaunay_triangulation(pointsCollection)
 
 
 # Fills given area with numberOfNodesToPut points, connects it and saves to file
 def recursive_fill(areaWidth: int, areaHeight: int, leftBottomPoint: (int, int), numberOfNodesToPut: int):
     if numberOfNodesToPut <= NODES_IN_AREA_LIMIT:
         pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut)
+        connect_points_EMST(pointsCollection)
 
     else:
         print("not implemented yet")
 
 
 if __name__ == '__main__':
-    (numberOfNodes, mapWidth, mapHeight) = read_input()
+    (numberOfNodes, mapWidth, mapHeight, nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
+    recursive_fill(mapWidth, mapHeight, (0, 0), numberOfNodes)
