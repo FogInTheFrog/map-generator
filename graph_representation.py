@@ -41,21 +41,20 @@ def draw_points_with_convex_hull(pointsCollection: list[int, int, int],
     plt.show()
 
 
-def draw_points_and_edges(pointsCollection: list[int, int, int], edgesCollection: list[int, int, int]):
+def draw_points_and_edges(pointsCollection: list[(int, int, int)], edgesCollection: list[(int, int, int)]):
     x_points = []
     y_points = []
 
-    sources = []
-    destinations = []
+    pointsDict = dict()
 
-    for name, x, y in pointsCollection:
+    for pointId, x, y in pointsCollection:
         x_points.append(x)
         y_points.append(y)
+        pointsDict[pointId] = (x, y)
 
     for weight, src, dest in edgesCollection:
-        sources.append(src)
-        destinations.append(dest)
+        src_x, src_y = pointsDict[src]
+        dest_x, dest_y = pointsDict[dest]
+        plt.plot([src_x, dest_x], [src_y, dest_y], marker='o', color='r', linewidth=2.0)
 
-    plt.plot(x_points, y_points, 'ro')
-    plt.plot(sources, destinations, color='r', linewidth=2.0)
     plt.show()
