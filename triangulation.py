@@ -5,7 +5,12 @@ import numpy as np
 COPY_OPPOSITE_DIRECTION_TRI = False
 COPY_OPPOSITE_DIRECTION_DSU = False
 COPY_OPPOSITE_DIRECTION_CHU = False
-EXTRA_EDGE_CHANCE = (0, 4)  # for EXTRA_EDGE_CHANCE = (a, b) chance of adding this extra edges is a / b
+
+
+# Calculates chance of adding extra edge depending on numberOfPoints
+# Return type is a pair (a, b) where chance is a / b
+def extra_edge_chance_formula(numberOfPoints: int) -> (int, int):
+    return 1, 4
 
 
 # https://docs.scipy.org/doc/scipy/reference/tutorial/spatial.html
@@ -36,6 +41,7 @@ def delaunay_triangulation(pointsCollection: list[(int, int, int)]):
 def find_and_union(edges: list[(int, int, int)]):
     edges.sort()
     temp_points = set()
+    extraEdgeChance = extra_edge_chance_formula(edges.__len__())
 
     for edge in edges:
         temp_points.add(edge[1])
@@ -60,7 +66,7 @@ def find_and_union(edges: list[(int, int, int)]):
         yRoot = find(y)
 
         if xRoot == yRoot:
-            (numerator, denominator) = EXTRA_EDGE_CHANCE
+            (numerator, denominator) = extraEdgeChance
             chance = random_value(denominator)
             return chance < numerator
 
