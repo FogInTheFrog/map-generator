@@ -1,2 +1,18 @@
 scipy~=1.7.3
 numpy~=1.21.4
+matplotlib~=3.5.0
+
+# Returns list of edges that belong to convex hull
+def convex_hull(pointsCollection: list[int, int, int]) -> list[int, int, int]:
+    points_temp = np.array([(x, y) for (name, x, y) in pointsCollection])
+    hull = ConvexHull(points_temp)
+
+    convexHullPoints = []
+    convexHullEdges = []
+
+    for point_id in hull.vertices:
+        convexHullPoints.append(pointsCollection[point_id])
+        if convexHullPoints.__len__() > 1:
+            convexHullEdges.append()
+
+    return result_points
