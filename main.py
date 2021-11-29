@@ -1,6 +1,6 @@
 from random import randrange as random_value
 from triangulation import delaunay_triangulation, find_and_union, convex_hull
-from graph_representation import draw_points_with_convex_hull
+from graph_representation import draw_points_with_convex_hull, draw_points_and_edges
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
@@ -70,9 +70,8 @@ def recursive_fill(areaWidth: int, areaHeight: int, leftBottomPoint: (int, int),
     if numberOfNodesToPut <= NODES_IN_AREA_LIMIT:
         pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut)
         edges = connect_points_EMST_with_extra_edges(pointsCollection)
-        convexHullEdges = convex_hull(pointsCollection)
-        # draw_points(pointsCollection)
-        draw_points_with_convex_hull(pointsCollection, hullPointsCollection)
+        convexHullPointsCollection = convex_hull(pointsCollection)
+        draw_points_and_edges(pointsCollection, edges)
     else:
         print("not implemented yet")
 

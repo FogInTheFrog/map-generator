@@ -3,8 +3,9 @@ from scipy.spatial import Delaunay, ConvexHull
 import numpy as np
 
 COPY_OPPOSITE_DIRECTION_TRI = False
-COPY_OPPOSITE_DIRECTION_DSU = True
-EXTRA_EDGE_CHANCE = (2, 4)  # for EXTRA_EDGE_CHANCE = (a, b) chance of adding this extra edges is a / b
+COPY_OPPOSITE_DIRECTION_DSU = False
+COPY_OPPOSITE_DIRECTION_CHU = False
+EXTRA_EDGE_CHANCE = (0, 4)  # for EXTRA_EDGE_CHANCE = (a, b) chance of adding this extra edges is a / b
 
 
 # https://docs.scipy.org/doc/scipy/reference/tutorial/spatial.html
@@ -87,33 +88,27 @@ def find_and_union(edges: list[(int, int, int)]):
     return result_edges
 
 
-# Returns list of edges that belong to convex hull
-def convex_hull(pointsCollection: list[int, int, int]) -> list[int, int, int]:
+# Returns list of points that belong to convex hull
+def convex_hull(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)]:
+    result_points = []
     points_temp = np.array([(x, y) for (name, x, y) in pointsCollection])
     hull = ConvexHull(points_temp)
 
-    convexHullPoints = []
-    convexHullEdges = []
-
     for point_id in hull.vertices:
-        convexHullPoints.append(pointsCollection[point_id])
-        if convexHullPoints.__len__() > 1:
-            convexHullEdges.append()
+        result_points.append(pointsCollection[point_id])
 
     return result_points
 
 
 # Returns list of edges that belong to convex hull
-def convex_hull(pointsCollection: list[int, int, int]) -> list[int, int, int]:
-    points_temp = np.array([(x, y) for (name, x, y) in pointsCollection])
-    hull = ConvexHull(points_temp)
-
-    convexHullPoints = []
+def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)]:
     convexHullEdges = []
 
-    for point_id in hull.vertices:
-        convexHullPoints.append(pointsCollection[point_id])
-        if convexHullPoints.__len__() > 1:
-            convexHullEdges.append()
-
-    return result_points
+    for i in range(pointsCollection.__len__()):
+        (pointId1, x1, y1) = pointsCollection[i]
+        (pointId2, x2, y2) = pointsCollection[i]
+        euclidean_distance = (x1 - x2) ** 2 + (y1 - y2) ** 2
+        convexHullEdges.append((euclidean_distance, pointId1, pointId2))
+        if COPY_OPPOSITE_DIRECTION_CHU:
+            convexHullEdges.append((euclidean_distance, pointId2, pointId1))
+    return convexHullEdges
