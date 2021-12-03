@@ -9,6 +9,8 @@ COPY_OPPOSITE_DIRECTION_CHU = False
 
 # Calculates chance of adding extra edge depending on numberOfPoints
 # Return type is a pair (a, b) where chance is a / b
+# NOTE: According to our observations the best proportion is:
+#       1/4 extra edge chance and (1/3 to 1/4) density
 def extra_edge_chance_formula(numberOfPoints: int) -> (int, int):
     return 1, 4
 

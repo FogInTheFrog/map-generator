@@ -1,12 +1,13 @@
 from random import randrange as random_value
 from triangulation import delaunay_triangulation, find_and_union, convex_hull, convex_hull_points_to_edges
-from graph_representation import draw_points_with_convex_hull, draw_points_and_edges
+from graph_representation import draw_points_and_edges
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
 
-NODES_IN_AREA_LIMIT = 1000
+NODES_IN_AREA_LIMIT = 1000 * 20000
 STARTING_POINT = (0, 0)
+DEBUG = True
 
 
 # Function reads 3 arguments from standard input
@@ -17,8 +18,8 @@ def read_input() -> (int, int, int):
     nameOfFileToStorePointsRaw = input()
     nameOfFileToStoreRoadsRaw = input()
 
-    return int(numberOfNodesRaw), int(mapWidthRaw), int(mapHeightRaw), \
-           nameOfFileToStorePointsRaw, nameOfFileToStoreRoadsRaw
+    return int(numberOfNodesRaw), int(mapWidthRaw), int(mapHeightRaw), nameOfFileToStorePointsRaw, \
+           nameOfFileToStoreRoadsRaw
 
 
 # Function returns lowest unique id of point
@@ -61,8 +62,19 @@ def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint
 # the Euclidean minimum spanning tree for a given set of planar points may be found in time
 # O(n log n), using algorithms based on comparisons of simple combinations of input coordinates.
 def connect_points_EMST_with_extra_edges(pointsCollection: list[(int, int, int)]):
+    # TODO: sprawdzanie czy punkty nie są współliniowe bo wtedy psuje się otoczka i czy >= 3
     potential_edges = delaunay_triangulation(pointsCollection)
     return find_and_union(potential_edges)
+
+
+def save_edges_to_file(edges: list[(int, int, int)]):
+    # TODO zapisanie + generowanie nazw
+    print("not implemented yet")
+
+
+def save_points_to_file(pointsCollection: list[(int, int, int)]):
+    # TODO zapisanie + generowanie nazw
+    print("not implemented yet")
 
 
 # Fills given area with numberOfNodesToPut points, connects it and saves to file
@@ -74,8 +86,14 @@ def recursive_fill(areaWidth: int, areaHeight: int, leftBottomPoint: (int, int),
         convexHullPointsCollection = convex_hull(pointsCollection)
         convexHullEdges = convex_hull_points_to_edges(convexHullPointsCollection)
 
-        draw_points_and_edges(pointsCollection, edges)
-        draw_points_and_edges(pointsCollection, edges + convexHullEdges)
+        if DEBUG:
+            draw_points_and_edges(pointsCollection, edges)
+            draw_points_and_edges(pointsCollection, edges + convexHullEdges)
+
+        save_points_to_file(pointsCollection)
+        save_edges_to_file(edges)
+
+        return convexHullPointsCollection
     else:
         print("not implemented yet")
 

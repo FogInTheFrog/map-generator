@@ -8,7 +8,6 @@ def draw_points(pointsCollection: list[int, int, int]):
     for name, x, y in pointsCollection:
         x_coordinates.append(x)
         y_coordinates.append(y)
-
     plt.plot(x_coordinates, y_coordinates, 'ro')
     # plt.axis([-2, 12, -2, 12])
     plt.show()
