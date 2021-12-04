@@ -3,19 +3,19 @@ from random import randrange as random_value
 from random import getrandbits
 from triangulation import delaunay_triangulation, find_and_union, convex_hull, \
     convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear
-from graph_representation import draw_points_and_edges
+from graph_representation import draw_points_and_edges, draw_points, draw_points_colormap, draw_points_colormap_hist2d
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
 
-VERTICAL_NUMBER_OF_REGIONS = 1
+VERTICAL_NUMBER_OF_REGIONS = 2
 HORIZONTAL_NUMBER_OF_REGIONS = 2
 REGION_HEIGHT = 320
 REGION_WIDTH = 320
 
 POPULATION_DENSITY_MIN = 1 / 6
 STARTING_POINT = (0, 0)
-DEBUG = True
+DEBUG = False
 
 
 # Function reads 3 arguments from standard input
@@ -198,11 +198,16 @@ if __name__ == '__main__':
     (numberOfNodes, nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
     numberOfRegions = HORIZONTAL_NUMBER_OF_REGIONS * VERTICAL_NUMBER_OF_REGIONS
     sumOfAllPoints = 0
+    pointsCollectionFromConvexHulls = []
 
     for i in range(1, numberOfRegions + 1):
+        if DEBUG:
+            print(i, numberOfRegions, numberOfNodes, sumOfAllPoints)
         pointsInRegion = random_value(2 * numberOfNodes) // numberOfRegions
         sumOfAllPoints += pointsInRegion
 
-        populate_region(i, pointsInRegion, nameOfFileToStorePoints, nameOfFileToStoreRoads)
+        pointsCollectionFromConvexHulls.extend(
+            populate_region(i, pointsInRegion, nameOfFileToStorePoints, nameOfFileToStoreRoads))
 
-    print(numberOfNodes, sumOfAllPoints)
+    # draw_points_colormap(pointsCollectionFromConvexHulls)
+    draw_points_colormap_hist2d(pointsCollectionFromConvexHulls)

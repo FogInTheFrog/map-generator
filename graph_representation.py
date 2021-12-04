@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import gaussian_kde
 
 
 def draw_points(pointsCollection: list[int, int, int]):
@@ -9,7 +11,6 @@ def draw_points(pointsCollection: list[int, int, int]):
         x_coordinates.append(x)
         y_coordinates.append(y)
     plt.plot(x_coordinates, y_coordinates, 'ro')
-    # plt.axis([-2, 12, -2, 12])
     plt.show()
 
 
@@ -56,4 +57,34 @@ def draw_points_and_edges(pointsCollection: list[(int, int, int)], edgesCollecti
         dest_x, dest_y = pointsDict[dest]
         plt.plot([src_x, dest_x], [src_y, dest_y], marker='o', color='r', linewidth=2.0)
 
+    plt.show()
+
+
+def draw_points_colormap(pointsCollection: list[(int, int, int)]):
+    x_coordinates = []
+    y_coordinates = []
+
+    for name, x, y in pointsCollection:
+        x_coordinates.append(x)
+        y_coordinates.append(y)
+
+    # Calculate the point density
+    xy = np.vstack([x_coordinates, y_coordinates])
+    z = gaussian_kde(xy)(xy)
+
+    fig, ax = plt.subplots()
+    ax.scatter(x_coordinates, y_coordinates, c=z, s=100)
+    plt.show()
+
+
+def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int)]):
+    x_coordinates = []
+    y_coordinates = []
+
+    for name, x, y in pointsCollection:
+        x_coordinates.append(x)
+        y_coordinates.append(y)
+
+    plt.hist2d(x_coordinates, y_coordinates, (10, 10), cmap=plt.cm.jet)
+    plt.colorbar()
     plt.show()
