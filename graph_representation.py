@@ -85,6 +85,6 @@ def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int)]):
         x_coordinates.append(x)
         y_coordinates.append(y)
 
-    plt.hist2d(x_coordinates, y_coordinates, (10, 10), cmap=plt.cm.jet)
+    plt.hist2d(x_coordinates, y_coordinates, (20, 20), cmap=plt.cm.jet)
     plt.colorbar()
     plt.show()

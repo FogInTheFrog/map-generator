@@ -37,6 +37,11 @@ def extra_edge_chance_formula(numberOfPoints: int) -> (int, int):
     return 1, 4
 
 
+def get_square_of_distance(pointA: (int, int), pointB: (int, int)):
+    diff = (pointB[0] - pointA[0]), (pointB[1] - pointA[1])
+    return diff[0] ** 2 + diff[1] ** 2
+
+
 # https://docs.scipy.org/doc/scipy/reference/tutorial/spatial.html
 # Returns list of tuples where each tuple contains:
 #       square of distance between point1 and point2 on euclidean plane,
@@ -63,6 +68,7 @@ def delaunay_triangulation(pointsCollection: list[(int, int, int)]):
     return edges
 
 
+# Returns list of (weight, src, dest)
 def find_and_union(edges: list[(int, int, int)]):
     edges.sort()
     temp_points = set()
@@ -172,3 +178,11 @@ def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list
             convexHullEdges.append((euclidean_distance, pointId2, pointId1))
 
     return convexHullEdges
+
+
+def find_center_of_polygon(regionId: int, pointsCollection: list[(int, int, int)]) -> (int, int):
+    numOfPoints = pointsCollection.__len__()
+    x_mean = sum(point[1] for point in pointsCollection) // numOfPoints
+    y_mean = sum(point[2] for point in pointsCollection) // numOfPoints
+
+    return regionId, x_mean, y_mean

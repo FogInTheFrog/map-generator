@@ -2,7 +2,8 @@ import copy
 from random import randrange as random_value
 from random import getrandbits
 from triangulation import delaunay_triangulation, find_and_union, convex_hull, \
-    convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear
+    convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear, \
+    find_center_of_polygon, get_square_of_distance
 from graph_representation import draw_points_and_edges, draw_points, draw_points_colormap, draw_points_colormap_hist2d
 
 lowestUniqueNodeId = 1
@@ -10,8 +11,8 @@ lowestUniqueEdgeId = 1
 
 VERTICAL_NUMBER_OF_REGIONS = 2
 HORIZONTAL_NUMBER_OF_REGIONS = 2
-REGION_HEIGHT = 320
-REGION_WIDTH = 320
+REGION_HEIGHT = 20
+REGION_WIDTH = 20
 
 POPULATION_DENSITY_MIN = 1 / 6
 STARTING_POINT = (0, 0)
@@ -191,7 +192,37 @@ def populate_region(regionId: int, numberOfNodesToPut: int, nameOfFileToStorePoi
     save_points_to_file(pointsCollection, nameOfFileToStorePoints)
     save_edges_to_file(edges, nameOfFileToStoreRoads)
 
-    return convexHullPointsCollection
+    return convexHullPointsCollection, convexHullEdges
+
+
+def connect_regions(centralPoints: list[(int, int, int)], convexHullsOfRegions: list[list[(int, int, int)]]):
+    def find_closest_point(aPointsOnConvexHull: list[(int, int, int)],
+                           bPointsOnConvexHull: list[(int, int, int)]):
+        a = aPointsOnConvexHull[0]
+        b = bPointsOnConvexHull[0]
+        bestResult = get_square_of_distance((a[1], a[2]), (b[1], b[2]))
+
+        for a_id, a_x, a_y in aPointsOnConvexHull:
+            for b_id, b_x, b_y in bPointsOnConvexHull:
+                dist = get_square_of_distance((a_x, a_y), (b_x, b_y))
+                if dist < bestResult:
+                    a = (a_id, a_x, a_y)
+                    b = (b_id, b_x, b_y)
+                    bestResult = dist
+
+        return a, b, bestResult
+
+    potential_edges = connect_points_EMST_with_extra_edges(centralPoints)
+    edges = []
+
+    for (weight, src, dest) in potential_edges:
+        aPointsCollection = convexHullsOfRegions[src - 1]
+        bPointsCollection = convexHullsOfRegions[dest - 1]
+
+        (point_a, point_b, distance) = find_closest_point(aPointsCollection, bPointsCollection)
+        edges.append((distance, point_a[0], point_b[0]))
+
+    return edges
 
 
 if __name__ == '__main__':
@@ -199,15 +230,33 @@ if __name__ == '__main__':
     numberOfRegions = HORIZONTAL_NUMBER_OF_REGIONS * VERTICAL_NUMBER_OF_REGIONS
     sumOfAllPoints = 0
     pointsCollectionFromConvexHulls = []
+    centralPointsFromConvexHulls = []
+    edgesCUL = []
 
-    for i in range(1, numberOfRegions + 1):
+    for regionId in range(1, numberOfRegions + 1):
         if DEBUG:
-            print(i, numberOfRegions, numberOfNodes, sumOfAllPoints)
+            print(regionId, numberOfRegions, numberOfNodes, sumOfAllPoints)
         pointsInRegion = random_value(2 * numberOfNodes) // numberOfRegions
         sumOfAllPoints += pointsInRegion
 
-        pointsCollectionFromConvexHulls.extend(
-            populate_region(i, pointsInRegion, nameOfFileToStorePoints, nameOfFileToStoreRoads))
+        pointsConvexHull, edgesConvexHull = populate_region(regionId, pointsInRegion, nameOfFileToStorePoints,
+                                                            nameOfFileToStoreRoads)
 
-    # draw_points_colormap(pointsCollectionFromConvexHulls)
-    draw_points_colormap_hist2d(pointsCollectionFromConvexHulls)
+        edgesCUL.extend(edgesConvexHull)
+        pointsCollectionFromConvexHulls.append(pointsConvexHull)
+        print("CUL Points:" + pointsConvexHull.__str__())
+        centerOfConvexHull = find_center_of_polygon(regionId, pointsConvexHull)
+        centralPointsFromConvexHulls.append(centerOfConvexHull)
+
+    highways = connect_regions(centralPointsFromConvexHulls, pointsCollectionFromConvexHulls)
+    highways.extend(edgesCUL)
+
+    save_edges_to_file(highways, nameOfFileToStoreRoads)
+
+    # Printing:
+    flatPointsCollectionFromConvexHulls = [point for sublist in pointsCollectionFromConvexHulls for point in sublist]
+    print("Flats: ", flatPointsCollectionFromConvexHulls.__str__())
+    print("Highways: ", highways.__str__())
+
+    draw_points_and_edges(flatPointsCollectionFromConvexHulls, highways)
+    draw_points_colormap_hist2d(flatPointsCollectionFromConvexHulls)
