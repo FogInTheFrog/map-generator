@@ -1,24 +1,30 @@
 from random import randrange as random_value
+from random import getrandbits
 from triangulation import delaunay_triangulation, find_and_union, convex_hull, convex_hull_points_to_edges
 from graph_representation import draw_points_and_edges
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
 
-NODES_IN_AREA_LIMIT = 1000 * 20000
+VERTICAL_NUMBER_OF_REGIONS = 1
+HORIZONTAL_NUMBER_OF_REGIONS = 2
+REGION_HEIGHT = 320
+REGION_WIDTH = 320
+
+POPULATION_DENSITY_MIN = 1 / 6
 STARTING_POINT = (0, 0)
 DEBUG = True
 
 
 # Function reads 3 arguments from standard input
-def read_input() -> (int, int, int):
+def read_input() -> (int, str, str):
     numberOfNodesRaw = input()
-    mapWidthRaw = input()
-    mapHeightRaw = input()
+    # mapWidthRaw = input()
+    # mapHeightRaw = input()
     nameOfFileToStorePointsRaw = input()
     nameOfFileToStoreRoadsRaw = input()
 
-    return int(numberOfNodesRaw), int(mapWidthRaw), int(mapHeightRaw), nameOfFileToStorePointsRaw, \
+    return int(numberOfNodesRaw), nameOfFileToStorePointsRaw, \
            nameOfFileToStoreRoadsRaw
 
 
@@ -67,37 +73,132 @@ def connect_points_EMST_with_extra_edges(pointsCollection: list[(int, int, int)]
     return find_and_union(potential_edges)
 
 
-def save_edges_to_file(edges: list[(int, int, int)]):
-    # TODO zapisanie + generowanie nazw
-    print("not implemented yet")
+# edges = list[(weight, src, dest)]
+def save_edges_to_file(edges: list[(int, int, int)], nameOfFile: str):
+    # TODO generowanie nazw
+    with open(nameOfFile, 'a') as file:
+        for edge in edges:
+            (weight, src, dest) = edge
+            edge_id = get_new_edge_id()
+            separator = ","
+            file.write(str(src) + separator + str(dest) + separator +
+                       str(weight) + separator + str(edge_id) + "\n")
 
 
-def save_points_to_file(pointsCollection: list[(int, int, int)]):
-    # TODO zapisanie + generowanie nazw
-    print("not implemented yet")
+# pointsCollection = list[(point_id, x, y)]
+def save_points_to_file(pointsCollection: list[(int, int, int)], nameOfFile: str):
+    # TODO generowanie nazw
+    with open(nameOfFile, 'a') as file:
+        for point in pointsCollection:
+            (point_id, x, y) = point
+            separator = ","
+            file.write(str(point_id) + separator + str(x) + separator + str(y) + "\n")
+
+
+# Returns number of points between two points with one same coordinate
+def get_distance_1d(a: int, b: int):
+    return abs(b - a) + 1
+
+
+# Limits regions size to populate region with given density
+def find_region_limits(numberOfPoints: int) -> (int, int, int, int):
+    regionLeft = 0
+    regionRight = REGION_WIDTH - 1
+    regionBot = 0
+    regionTop = REGION_HEIGHT - 1
+
+    # Returns new region horizontal / vertical ranges
+    def get_half(regionMin: int, regionMax: int, chooseSmallerCoordinatesHalf: bool) -> (int, int):
+        mid = (regionMin + regionMax) // 2
+
+        if chooseSmallerCoordinatesHalf:
+            return regionMin, mid
+        return mid + 1, regionMax
+
+    def calculate_density() -> float:
+        area = ((regionRight - regionLeft + 1) * (regionTop - regionBot + 1))
+        density = numberOfPoints / area
+        if DEBUG:
+            print(numberOfPoints, area, density)
+
+        return density
+
+    def is_possible_to_shorten(regionMin: int, regionMax: int):
+        return get_distance_1d(regionMin, regionMax) > 2
+
+    def is_possible_to_shorten_any() -> bool:
+        return is_possible_to_shorten(regionLeft, regionRight) or \
+               is_possible_to_shorten(regionBot, regionTop)
+
+    densityOfCurrentRegion = calculate_density()
+
+    while is_possible_to_shorten_any() and densityOfCurrentRegion <= POPULATION_DENSITY_MIN:
+        # Decision whether to cut horizontally or vertically depends on which axis is greater
+        # Randomizes if both values are equal
+        toShortenVertically = bool(getrandbits(1))
+        distanceVertically = get_distance_1d(regionTop, regionBot)
+        distanceHorizontally = get_distance_1d(regionLeft, regionRight)
+        if distanceHorizontally < distanceVertically:
+            toShortenVertically = True
+        elif distanceHorizontally > distanceVertically:
+            toShortenVertically = False
+
+        toChooseSmallerHalf = bool(getrandbits(1))
+
+        if toShortenVertically and is_possible_to_shorten(regionBot, regionTop):
+            regionBot, regionTop = get_half(regionBot, regionTop, toChooseSmallerHalf)
+        else:
+            regionLeft, regionRight = get_half(regionLeft, regionRight, toChooseSmallerHalf)
+        densityOfCurrentRegion = calculate_density()
+
+    return regionLeft, regionRight, regionBot, regionTop
+
+
+# Returns shift vector depending on regionId
+def calculate_shift_for_region(regionId: int):
+    regionColumn = (regionId - 1) % HORIZONTAL_NUMBER_OF_REGIONS + 1
+    regionRow = ((regionId - 1) // HORIZONTAL_NUMBER_OF_REGIONS) + 1
+    xShift = (regionColumn - 1) * REGION_WIDTH
+    yShift = (regionRow - 1) * REGION_HEIGHT
+    return xShift, yShift
 
 
 # Fills given area with numberOfNodesToPut points, connects it and saves to file
-def recursive_fill(areaWidth: int, areaHeight: int, leftBottomPoint: (int, int), numberOfNodesToPut: int):
-    if numberOfNodesToPut <= NODES_IN_AREA_LIMIT:
-        pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut)
-        edges = connect_points_EMST_with_extra_edges(pointsCollection)
+def populate_region(regionId: int, numberOfNodesToPut: int, nameOfFileToStorePoints: str,
+                    nameOfFileToStoreRoads: str):
+    regionLeft, regionRight, regionBot, regionTop = find_region_limits(numberOfNodesToPut)
+    areaWidth = get_distance_1d(regionRight, regionLeft)
+    areaHeight = get_distance_1d(regionTop, regionBot)
+    xShift, yShift = calculate_shift_for_region(regionId)
+    leftBottomPoint = (xShift + regionLeft, yShift + regionBot)
 
-        convexHullPointsCollection = convex_hull(pointsCollection)
-        convexHullEdges = convex_hull_points_to_edges(convexHullPointsCollection)
+    # pointsCollection is a list consisting tuples like (pointId, x, y)
+    pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut)
 
-        if DEBUG:
-            draw_points_and_edges(pointsCollection, edges)
-            draw_points_and_edges(pointsCollection, edges + convexHullEdges)
+    edges = connect_points_EMST_with_extra_edges(pointsCollection)
 
-        save_points_to_file(pointsCollection)
-        save_edges_to_file(edges)
+    convexHullPointsCollection = convex_hull(pointsCollection)
+    convexHullEdges = convex_hull_points_to_edges(convexHullPointsCollection)
 
-        return convexHullPointsCollection
-    else:
-        print("not implemented yet")
+    if DEBUG:
+        draw_points_and_edges(pointsCollection, edges)
+        draw_points_and_edges(pointsCollection, edges + convexHullEdges)
+
+    save_points_to_file(pointsCollection, nameOfFileToStorePoints)
+    save_edges_to_file(edges, nameOfFileToStoreRoads)
+
+    return convexHullPointsCollection
 
 
 if __name__ == '__main__':
-    (numberOfNodes, mapWidth, mapHeight, nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
-    recursive_fill(mapWidth, mapHeight, STARTING_POINT, numberOfNodes)
+    (numberOfNodes, nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
+    numberOfRegions = HORIZONTAL_NUMBER_OF_REGIONS * VERTICAL_NUMBER_OF_REGIONS
+    sumOfAllPoints = 0
+
+    for i in range(1, numberOfRegions + 1):
+        pointsInRegion = random_value(2 * numberOfNodes) // numberOfRegions
+        sumOfAllPoints += pointsInRegion
+
+        populate_region(i, pointsInRegion, nameOfFileToStorePoints, nameOfFileToStoreRoads)
+
+    print(numberOfNodes, sumOfAllPoints)
