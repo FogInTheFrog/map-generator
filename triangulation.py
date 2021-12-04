@@ -2,9 +2,31 @@ from random import randrange as random_value
 from scipy.spatial import Delaunay, ConvexHull
 import numpy as np
 
-COPY_OPPOSITE_DIRECTION_TRI = False
-COPY_OPPOSITE_DIRECTION_DSU = False
-COPY_OPPOSITE_DIRECTION_CHU = False
+COPY_OPPOSITE_DIRECTION_TRI = False     # Triangulation
+COPY_OPPOSITE_DIRECTION_DSU = False     # Disjoint set union
+COPY_OPPOSITE_DIRECTION_CHU = False     # Convex Hull
+
+
+# Should be used before trying to triangulate and calculate convex hull
+def are_points_collinear(pointsCollection: list[(int, int, int)]) -> bool:
+    if pointsCollection.__len__() < 3:
+        return True
+
+    a = pointsCollection[0]
+    b = pointsCollection[1]
+    x1_vec = a[1] - b[1]
+    y1_vec = a[2] - b[2]
+
+    def are_three_points_collinear(c: (int, int, int)) -> bool:
+        x2_vec = a[1] - c[1]
+        y2_vec = a[2] - c[2]
+        return x1_vec * y2_vec == x2_vec * y1_vec
+
+    for i in range(2, pointsCollection.__len__()):
+        if not are_three_points_collinear(pointsCollection[i]):
+            return False
+
+    return True
 
 
 # Calculates chance of adding extra edge depending on numberOfPoints
@@ -24,6 +46,7 @@ def delaunay_triangulation(pointsCollection: list[(int, int, int)]):
     edges = []
     points = np.array([(x, y) for (name, x, y) in pointsCollection])
     tri = Delaunay(points)
+
     for triangle in tri.simplices:
         for i in range(3):
             a = triangle[i]
@@ -96,8 +119,34 @@ def find_and_union(edges: list[(int, int, int)]):
     return result_edges
 
 
+# Function should be used only when points are collinear
+# Returns list of tuples where each tuple contains:
+#       square of distance between point1 and point2 on euclidean plane,
+#       point1.id,
+#       point2.id
+def get_edges_when_points_collinear(pointsCollection: list[(int, int, int)]):
+    pointsCollection.sort(key=lambda y: (y[1], y[2]))
+    edges = []
+
+    for i in range(1, pointsCollection.__len__()):
+        a = pointsCollection[i - 1]
+        b = pointsCollection[i]
+        squareEuclideanDist = ((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2)
+        edge_1 = (squareEuclideanDist, a[0], b[0])
+        edges.append(edge_1)
+
+        if COPY_OPPOSITE_DIRECTION_TRI:
+            edge_2 = (squareEuclideanDist, b[0], a[0])
+            edges.append(edge_2)
+
+    return edges
+
+
 # Returns list of points that belong to convex hull
 def convex_hull(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)]:
+    if are_points_collinear(pointsCollection):
+        return pointsCollection
+
     result_points = []
     points_temp = np.array([(x, y) for (name, x, y) in pointsCollection])
     hull = ConvexHull(points_temp)
@@ -118,6 +167,8 @@ def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list
         (pointId2, x2, y2) = pointsCollection[(i + 1) % n]
         euclidean_distance = (x1 - x2) ** 2 + (y1 - y2) ** 2
         convexHullEdges.append((euclidean_distance, pointId1, pointId2))
+
         if COPY_OPPOSITE_DIRECTION_CHU:
             convexHullEdges.append((euclidean_distance, pointId2, pointId1))
+
     return convexHullEdges

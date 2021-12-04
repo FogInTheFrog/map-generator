@@ -1,6 +1,8 @@
+import copy
 from random import randrange as random_value
 from random import getrandbits
-from triangulation import delaunay_triangulation, find_and_union, convex_hull, convex_hull_points_to_edges
+from triangulation import delaunay_triangulation, find_and_union, convex_hull, \
+    convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear
 from graph_representation import draw_points_and_edges
 
 lowestUniqueNodeId = 1
@@ -19,8 +21,6 @@ DEBUG = True
 # Function reads 3 arguments from standard input
 def read_input() -> (int, str, str):
     numberOfNodesRaw = input()
-    # mapWidthRaw = input()
-    # mapHeightRaw = input()
     nameOfFileToStorePointsRaw = input()
     nameOfFileToStoreRoadsRaw = input()
 
@@ -68,9 +68,13 @@ def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint
 # the Euclidean minimum spanning tree for a given set of planar points may be found in time
 # O(n log n), using algorithms based on comparisons of simple combinations of input coordinates.
 def connect_points_EMST_with_extra_edges(pointsCollection: list[(int, int, int)]):
-    # TODO: sprawdzanie czy punkty nie są współliniowe bo wtedy psuje się otoczka i czy >= 3
-    potential_edges = delaunay_triangulation(pointsCollection)
-    return find_and_union(potential_edges)
+    if are_points_collinear(pointsCollection):
+        pointsCollectionCopy = copy.copy(pointsCollection)
+        potential_edges = get_edges_when_points_collinear(pointsCollectionCopy)
+        return potential_edges
+    else:
+        potential_edges = delaunay_triangulation(pointsCollection)
+        return find_and_union(potential_edges)
 
 
 # edges = list[(weight, src, dest)]
