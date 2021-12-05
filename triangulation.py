@@ -34,7 +34,7 @@ def are_points_collinear(pointsCollection: list[(int, int, int)]) -> bool:
 # NOTE: According to our observations the best proportion is:
 #       1/4 extra edge chance and (1/3 to 1/4) density
 def extra_edge_chance_formula(numberOfPoints: int) -> (int, int):
-    return 1, 4
+    return 1, 3
 
 
 def get_square_of_distance(pointA: (int, int), pointB: (int, int)):

@@ -9,10 +9,10 @@ from graph_representation import draw_points_and_edges, draw_points, draw_points
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
 
-VERTICAL_NUMBER_OF_REGIONS = 2
-HORIZONTAL_NUMBER_OF_REGIONS = 2
-REGION_HEIGHT = 20
-REGION_WIDTH = 20
+VERTICAL_NUMBER_OF_REGIONS = 512
+HORIZONTAL_NUMBER_OF_REGIONS = 512
+REGION_HEIGHT = 320
+REGION_WIDTH = 320
 
 POPULATION_DENSITY_MIN = 1 / 6
 STARTING_POINT = (0, 0)
@@ -20,13 +20,11 @@ DEBUG = False
 
 
 # Function reads 3 arguments from standard input
-def read_input() -> (int, str, str):
-    numberOfNodesRaw = input()
+def read_input() -> (str, str):
     nameOfFileToStorePointsRaw = input()
     nameOfFileToStoreRoadsRaw = input()
 
-    return int(numberOfNodesRaw), nameOfFileToStorePointsRaw, \
-           nameOfFileToStoreRoadsRaw
+    return nameOfFileToStorePointsRaw, nameOfFileToStoreRoadsRaw
 
 
 # Function returns lowest unique id of point
@@ -225,8 +223,28 @@ def connect_regions(centralPoints: list[(int, int, int)], convexHullsOfRegions: 
     return edges
 
 
+def randomize_number_of_points_in_region() -> int:
+    x = random_value(1, 31041)
+    if x == 1:
+        return random_value(10000, 30000)
+    elif 2 <= x <= 6:
+        return random_value(5000, 10000)
+    elif 7 <= x <= 16:
+        return random_value(3000, 5000)
+    elif 17 <= x <= 41:
+        return random_value(2000, 4000)
+    elif 42 <= x <= 241:
+        return random_value(500, 2000)
+    elif 242 <= x <= 441:
+        return random_value(200, 500)
+    elif 442 <= x <= 1042:
+        return random_value(50, 200)
+    else:
+        return random_value(5, 50)
+
+
 if __name__ == '__main__':
-    (numberOfNodes, nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
+    (nameOfFileToStorePoints, nameOfFileToStoreRoads) = read_input()
     numberOfRegions = HORIZONTAL_NUMBER_OF_REGIONS * VERTICAL_NUMBER_OF_REGIONS
     sumOfAllPoints = 0
     pointsCollectionFromConvexHulls = []
@@ -234,9 +252,7 @@ if __name__ == '__main__':
     edgesCUL = []
 
     for regionId in range(1, numberOfRegions + 1):
-        if DEBUG:
-            print(regionId, numberOfRegions, numberOfNodes, sumOfAllPoints)
-        pointsInRegion = random_value(2 * numberOfNodes) // numberOfRegions
+        pointsInRegion = randomize_number_of_points_in_region()
         sumOfAllPoints += pointsInRegion
 
         pointsConvexHull, edgesConvexHull = populate_region(regionId, pointsInRegion, nameOfFileToStorePoints,
@@ -244,19 +260,18 @@ if __name__ == '__main__':
 
         edgesCUL.extend(edgesConvexHull)
         pointsCollectionFromConvexHulls.append(pointsConvexHull)
-        print("CUL Points:" + pointsConvexHull.__str__())
+
         centerOfConvexHull = find_center_of_polygon(regionId, pointsConvexHull)
         centralPointsFromConvexHulls.append(centerOfConvexHull)
 
     highways = connect_regions(centralPointsFromConvexHulls, pointsCollectionFromConvexHulls)
-    highways.extend(edgesCUL)
 
     save_edges_to_file(highways, nameOfFileToStoreRoads)
 
     # Printing:
-    flatPointsCollectionFromConvexHulls = [point for sublist in pointsCollectionFromConvexHulls for point in sublist]
-    print("Flats: ", flatPointsCollectionFromConvexHulls.__str__())
-    print("Highways: ", highways.__str__())
+    print(sumOfAllPoints)
 
-    draw_points_and_edges(flatPointsCollectionFromConvexHulls, highways)
+    flatPointsCollectionFromConvexHulls = [point for sublist in pointsCollectionFromConvexHulls for point in sublist]
+
+    # draw_points_and_edges(flatPointsCollectionFromConvexHulls, highways)
     draw_points_colormap_hist2d(flatPointsCollectionFromConvexHulls)
