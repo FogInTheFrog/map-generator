@@ -1,6 +1,7 @@
 from random import randrange as random_value
 from scipy.spatial import Delaunay, ConvexHull
 import numpy as np
+import math
 
 COPY_OPPOSITE_DIRECTION_TRI = False     # Triangulation
 COPY_OPPOSITE_DIRECTION_DSU = False     # Disjoint set union
@@ -171,7 +172,7 @@ def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list
     for i in range(n):
         (pointId1, x1, y1) = pointsCollection[i]
         (pointId2, x2, y2) = pointsCollection[(i + 1) % n]
-        euclidean_distance = (x1 - x2) ** 2 + (y1 - y2) ** 2
+        euclidean_distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
         convexHullEdges.append((euclidean_distance, pointId1, pointId2))
 
         if COPY_OPPOSITE_DIRECTION_CHU:
