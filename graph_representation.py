@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gaussian_kde
+import pandas as pd
 
 
 def draw_points(pointsCollection: list[int, int, int]):
@@ -87,4 +88,24 @@ def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int)]):
 
     plt.hist2d(x_coordinates, y_coordinates, (1500, 1500), cmap=plt.cm.jet)
     plt.colorbar()
+    plt.show()
+
+
+# value, x, y
+def draw_points_depending_on_value(pointsCollection: list[(int, int, int)]):
+    x_coordinates = []
+    y_coordinates = []
+    values = []
+
+    for value, x, y in pointsCollection:
+        x_coordinates.append(x)
+        y_coordinates.append(y)
+        values.append(value)
+
+    df = pd.DataFrame({'x': x_coordinates,
+                       'y': y_coordinates,
+                       'z': values})
+
+    print(len(x_coordinates), len(y_coordinates), len(values))
+    plt.scatter(df.x, df.y, s=100, c=df.z, cmap='Greens')
     plt.show()

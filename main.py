@@ -5,6 +5,7 @@ from triangulation import delaunay_triangulation, find_and_union, convex_hull, \
     convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear, \
     find_center_of_polygon, get_square_of_distance
 from graph_representation import draw_points_and_edges, draw_points, draw_points_colormap, draw_points_colormap_hist2d
+from altitude_generator import generate_mountain_ranges
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1

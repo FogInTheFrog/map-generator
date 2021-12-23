@@ -1,11 +1,17 @@
 from random import randrange as random_value
 from scipy.spatial import Delaunay, ConvexHull
+from scipy.stats import truncnorm
 import numpy as np
 import math
 
 COPY_OPPOSITE_DIRECTION_TRI = False     # Triangulation
 COPY_OPPOSITE_DIRECTION_DSU = False     # Disjoint set union
 COPY_OPPOSITE_DIRECTION_CHU = False     # Convex Hull
+
+
+def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
+    return truncnorm(
+        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 
 # Should be used before trying to triangulate and calculate convex hull
