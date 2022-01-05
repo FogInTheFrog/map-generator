@@ -107,5 +107,5 @@ def draw_points_depending_on_value(pointsCollection: list[(int, int, int)]):
                        'z': values})
 
     print(len(x_coordinates), len(y_coordinates), len(values))
-    plt.scatter(df.x, df.y, s=100, c=df.z, cmap='Greens')
+    plt.scatter(df.x, df.y, s=20, c=df.z, cmap='Greens')
     plt.show()

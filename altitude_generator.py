@@ -35,9 +35,45 @@ def generate_mountain_ranges(numberOfMountains: int, map_width: int, map_height:
     return listOfMountainsExtremities
 
 
+def calculate_distance(p1, p2):
+    return math.sqrt(((p1[0] - p2[0]) ** 2) + ((p1[1] - p2[1]) ** 2))
+
+
+def cross_product(v1, v2):
+    return v1[0] * v2[1] - v1[1] * v2[0]
+
+
+def get_distance_from_line(srcn, destn, pointn):
+    src = np.asarray(srcn)
+    dest = np.asarray(destn)
+    point = np.asarray(pointn)
+    return np.abs(np.cross(dest - src, src - point)) / norm(dest - src)
+
+
+def calculate_square_of_distance(p1, p2):
+    return ((p1[0] - p2[0]) ** 2) + ((p1[1] - p2[1]) ** 2)
+
+
+def is_point_inside_segment(dist_src_dest, dist_src_point, dist_dest_point, dist_from_line):
+    if dist_src_point ** 2 - dist_from_line ** 2 > dist_src_dest ** 2:
+        return False
+    elif dist_dest_point ** 2 - dist_from_line ** 2 > dist_src_dest ** 2:
+        return False
+    return True
+
+
 def calculate_height(mountainRange, point):
     src, dest = mountainRange
-    return np.abs(np.cross(dest-src, src-point)) / norm(dest-src)
+
+    dist_src_dest = calculate_distance(src, dest)
+    dist_src_point = calculate_distance(src, point)
+    dist_dest_point = calculate_distance(dest, point)
+    dist_from_line = get_distance_from_line(src, dest, point)
+
+    if is_point_inside_segment(dist_src_dest, dist_src_point, dist_dest_point, dist_from_line):
+        return dist_from_line
+    else:
+        return int(min(dist_src_point, dist_dest_point))
 
 
 def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
@@ -45,17 +81,14 @@ def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
     for i in range(0, mapWidth, 200):
         for j in range(0, mapHeight, 200):
             height = 0
-            for (srcX, srcY), (destX, destY) in mountainRanges:
-                diffSrc = int(math.sqrt((srcX - i) ** 2 + (srcY - j) ** 2))
-                diffDest = int(math.sqrt((destX - i) ** 2 + (destY - j) ** 2))
-                diff = min(diffSrc, diffDest)
+            for mountain in mountainRanges:
+                diff = calculate_height(mountain, (i, j))
                 # We calculate factor and percentile to match this:
                 # https://pl.wikipedia.org/wiki/Geografia_Polski#/media/Plik:Profil_wysoko%C5%9Bciowy_Polski.svg
                 # {{0,0},{0.2,100},{0.75,200},{0.9,300},{0.95, 400}, {0.975, 600}, {0.99, 900}, {1, 2500}}
                 factor = min(max((35000 - diff) / 35000, 0), 1)  # or 35000 TODO: this
                 percentile = factor ** 3  # TODO: change to 20
                 height += int(percentile * 25)
-            print(height, end=' ')
             pointsCollection.append((height, i, j))
 
     draw_points_depending_on_value(pointsCollection)
