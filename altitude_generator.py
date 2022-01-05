@@ -2,6 +2,8 @@
 from random import randrange as random_value, uniform
 from graph_representation import draw_points_and_edges, draw_points_depending_on_value
 import math
+import numpy as np
+from numpy.linalg import norm
 
 
 def is_point_on_map(x: int, y: int, map_width: int, map_height: int) -> bool:
@@ -33,6 +35,11 @@ def generate_mountain_ranges(numberOfMountains: int, map_width: int, map_height:
     return listOfMountainsExtremities
 
 
+def calculate_height(mountainRange, point):
+    src, dest = mountainRange
+    return np.abs(np.cross(dest-src, src-point)) / norm(dest-src)
+
+
 def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
     pointsCollection = []
     for i in range(0, mapWidth, 200):
@@ -42,10 +49,13 @@ def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
                 diffSrc = int(math.sqrt((srcX - i) ** 2 + (srcY - j) ** 2))
                 diffDest = int(math.sqrt((destX - i) ** 2 + (destY - j) ** 2))
                 diff = min(diffSrc, diffDest)
+                # We calculate factor and percentile to match this:
+                # https://pl.wikipedia.org/wiki/Geografia_Polski#/media/Plik:Profil_wysoko%C5%9Bciowy_Polski.svg
+                # {{0,0},{0.2,100},{0.75,200},{0.9,300},{0.95, 400}, {0.975, 600}, {0.99, 900}, {1, 2500}}
                 factor = min(max((35000 - diff) / 35000, 0), 1)  # or 35000 TODO: this
                 percentile = factor ** 3  # TODO: change to 20
                 height += int(percentile * 25)
-
+            print(height, end=' ')
             pointsCollection.append((height, i, j))
 
     draw_points_depending_on_value(pointsCollection)
