@@ -42,13 +42,13 @@ def draw_points_with_convex_hull(pointsCollection: list[int, int, int],
     plt.show()
 
 
-def draw_points_and_edges(pointsCollection: list[(int, int, int)], edgesCollection: list[(int, int, int)]):
+def draw_points_and_edges(pointsCollection: list[(int, int, int, int)], edgesCollection: list[(int, int, int)]):
     x_points = []
     y_points = []
 
     pointsDict = dict()
 
-    for pointId, x, y in pointsCollection:
+    for pointId, x, y, h in pointsCollection:
         x_points.append(x)
         y_points.append(y)
         pointsDict[pointId] = (x, y)
@@ -61,11 +61,11 @@ def draw_points_and_edges(pointsCollection: list[(int, int, int)], edgesCollecti
     plt.show()
 
 
-def draw_points_colormap(pointsCollection: list[(int, int, int)]):
+def draw_points_colormap(pointsCollection: list[(int, int, int, int)]):
     x_coordinates = []
     y_coordinates = []
 
-    for name, x, y in pointsCollection:
+    for name, x, y, h in pointsCollection:
         x_coordinates.append(x)
         y_coordinates.append(y)
 
@@ -78,11 +78,11 @@ def draw_points_colormap(pointsCollection: list[(int, int, int)]):
     plt.show()
 
 
-def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int)]):
+def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int, int)]):
     x_coordinates = []
     y_coordinates = []
 
-    for name, x, y in pointsCollection:
+    for name, x, y, h in pointsCollection:
         x_coordinates.append(x)
         y_coordinates.append(y)
 
@@ -92,12 +92,12 @@ def draw_points_colormap_hist2d(pointsCollection: list[(int, int, int)]):
 
 
 # value, x, y
-def draw_points_depending_on_value(pointsCollection: list[(int, int, int)]):
+def draw_points_depending_on_value(pointsCollection: list[(int, int, int, int)]):
     x_coordinates = []
     y_coordinates = []
     values = []
 
-    for value, x, y in pointsCollection:
+    for value, x, y, h in pointsCollection:
         x_coordinates.append(x)
         y_coordinates.append(y)
         values.append(value)

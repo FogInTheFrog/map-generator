@@ -3,9 +3,9 @@ from random import randrange as random_value
 from random import getrandbits
 from triangulation import delaunay_triangulation, find_and_union, convex_hull, \
     convex_hull_points_to_edges, get_edges_when_points_collinear, are_points_collinear, \
-    find_center_of_polygon, get_square_of_distance
+    find_center_of_polygon, get_square_of_distance, distance_between_two_points_including_height
 from graph_representation import draw_points_and_edges, draw_points, draw_points_colormap, draw_points_colormap_hist2d
-from altitude_generator import generate_mountain_ranges
+from altitude_generator import generate_mountain_ranges, calculate_height
 
 lowestUniqueNodeId = 1
 lowestUniqueEdgeId = 1
@@ -46,7 +46,7 @@ def get_new_edge_id() -> int:
 # For given coordinates (x, y) of leftBottomPoint and area width and height,
 # function generates integer coordinates in range [x; x + width - 1] and [y; y + height - 1]
 def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint: (int, int),
-                                numberOfNodesToPut: int) -> list[(int, int, int)]:
+                                numberOfNodesToPut: int, mountainRanges) -> list[(int, int, int, int)]:
     uniqueCoordinatesCollection = set()
     while uniqueCoordinatesCollection.__len__() < numberOfNodesToPut:
         x_vec = random_value(areaWidth)
@@ -58,7 +58,8 @@ def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint
     pointsCollection = []
     for (x, y) in uniqueCoordinatesCollection:
         point_id = get_new_node_id()
-        point = (point_id, leftBottomPoint[0] + x, leftBottomPoint[1] + y)
+        height = calculate_height(mountainRanges, (leftBottomPoint[0] + x, leftBottomPoint[1] + y))
+        point = (point_id, leftBottomPoint[0] + x, leftBottomPoint[1] + y, height)
         pointsCollection.append(point)
 
     return pointsCollection
@@ -67,7 +68,7 @@ def generate_points_inside_area(areaWidth: int, areaHeight: int, leftBottomPoint
 # In the plane, the Euclidean minimum spanning tree is a subgraph of the Delaunay triangulation. Using this fact,
 # the Euclidean minimum spanning tree for a given set of planar points may be found in time
 # O(n log n), using algorithms based on comparisons of simple combinations of input coordinates.
-def connect_points_EMST_with_extra_edges(pointsCollection: list[(int, int, int)]):
+def connect_points_EMST_with_extra_edges(pointsCollection: list[(int, int, int, int)]):
     if are_points_collinear(pointsCollection):
         pointsCollectionCopy = copy.copy(pointsCollection)
         potential_edges = get_edges_when_points_collinear(pointsCollectionCopy)
@@ -94,7 +95,7 @@ def save_points_to_file(pointsCollection: list[(int, int, int)], nameOfFile: str
     # TODO generowanie nazw
     with open(nameOfFile, 'a') as file:
         for point in pointsCollection:
-            (point_id, x, y) = point
+            (point_id, x, y) = (point[0], point[1], point[2])
             separator = ","
             file.write(str(point_id) + separator + str(x) + separator + str(y) + "\n")
 
@@ -169,15 +170,16 @@ def calculate_shift_for_region(regionId: int):
 
 # Fills given area with numberOfNodesToPut points, connects it and saves to file
 def populate_region(regionId: int, numberOfNodesToPut: int, nameOfFileToStorePoints: str,
-                    nameOfFileToStoreRoads: str):
+                    nameOfFileToStoreRoads: str, mountainRanges):
     regionLeft, regionRight, regionBot, regionTop = find_region_limits(numberOfNodesToPut)
     areaWidth = get_distance_1d(regionRight, regionLeft)
     areaHeight = get_distance_1d(regionTop, regionBot)
     xShift, yShift = calculate_shift_for_region(regionId)
     leftBottomPoint = (xShift + regionLeft, yShift + regionBot)
 
-    # pointsCollection is a list consisting tuples like (pointId, x, y)
-    pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut)
+    # pointsCollection is a list consisting tuples like (pointId, x, y, height)
+    pointsCollection = generate_points_inside_area(areaWidth, areaHeight, leftBottomPoint, numberOfNodesToPut,
+                                                   mountainRanges)
 
     edges = connect_points_EMST_with_extra_edges(pointsCollection)
 
@@ -194,19 +196,19 @@ def populate_region(regionId: int, numberOfNodesToPut: int, nameOfFileToStorePoi
     return convexHullPointsCollection, convexHullEdges
 
 
-def connect_regions(centralPoints: list[(int, int, int)], convexHullsOfRegions: list[list[(int, int, int)]]):
-    def find_closest_point(aPointsOnConvexHull: list[(int, int, int)],
-                           bPointsOnConvexHull: list[(int, int, int)]):
+def connect_regions(centralPoints: list[(int, int, int, int)], convexHullsOfRegions: list[list[(int, int, int, int)]]):
+    def find_closest_point(aPointsOnConvexHull: list[(int, int, int, int)],
+                           bPointsOnConvexHull: list[(int, int, int, int)]):
         a = aPointsOnConvexHull[0]
         b = bPointsOnConvexHull[0]
-        bestResult = get_square_of_distance((a[1], a[2]), (b[1], b[2]))
+        bestResult = distance_between_two_points_including_height(a, b)
 
-        for a_id, a_x, a_y in aPointsOnConvexHull:
-            for b_id, b_x, b_y in bPointsOnConvexHull:
-                dist = get_square_of_distance((a_x, a_y), (b_x, b_y))
+        for my_a in aPointsOnConvexHull:
+            for my_b in bPointsOnConvexHull:
+                dist = distance_between_two_points_including_height(my_a, my_b)
                 if dist < bestResult:
-                    a = (a_id, a_x, a_y)
-                    b = (b_id, b_x, b_y)
+                    a = my_a
+                    b = my_b
                     bestResult = dist
 
         return a, b, bestResult
@@ -250,16 +252,18 @@ if __name__ == '__main__':
     sumOfAllPoints = 0
     pointsCollectionFromConvexHulls = []
     centralPointsFromConvexHulls = []
-    edgesCUL = []
+
+    MAP_WIDTH = HORIZONTAL_NUMBER_OF_REGIONS * REGION_WIDTH
+    MAP_HEIGHT = VERTICAL_NUMBER_OF_REGIONS * REGION_HEIGHT
+    mountains = generate_mountain_ranges(10, MAP_WIDTH, MAP_HEIGHT)
 
     for regionId in range(1, numberOfRegions + 1):
         pointsInRegion = randomize_number_of_points_in_region()
         sumOfAllPoints += pointsInRegion
 
         pointsConvexHull, edgesConvexHull = populate_region(regionId, pointsInRegion, nameOfFileToStorePoints,
-                                                            nameOfFileToStoreRoads)
+                                                            nameOfFileToStoreRoads, mountains)
 
-        edgesCUL.extend(edgesConvexHull)
         pointsCollectionFromConvexHulls.append(pointsConvexHull)
 
         centerOfConvexHull = find_center_of_polygon(regionId, pointsConvexHull)
@@ -272,7 +276,7 @@ if __name__ == '__main__':
     # Printing:
     print(sumOfAllPoints)
 
-    flatPointsCollectionFromConvexHulls = [point for sublist in pointsCollectionFromConvexHulls for point in sublist]
-
-    # draw_points_and_edges(flatPointsCollectionFromConvexHulls, highways)
-    draw_points_colormap_hist2d(flatPointsCollectionFromConvexHulls)
+    # flatPointsCollectionFromConvexHulls = [point for sublist in pointsCollectionFromConvexHulls for point in sublist]
+    #
+    # draw_points_and_edges(flatPointsCollectionFromConvexHulls, edgesCUL + highways)
+    # draw_points_colormap_hist2d(flatPointsCollectionFromConvexHulls)

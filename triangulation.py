@@ -15,7 +15,7 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
 
 
 # Should be used before trying to triangulate and calculate convex hull
-def are_points_collinear(pointsCollection: list[(int, int, int)]) -> bool:
+def are_points_collinear(pointsCollection: list[(int, int, int, int)]) -> bool:
     if pointsCollection.__len__() < 3:
         return True
 
@@ -24,7 +24,7 @@ def are_points_collinear(pointsCollection: list[(int, int, int)]) -> bool:
     x1_vec = a[1] - b[1]
     y1_vec = a[2] - b[2]
 
-    def are_three_points_collinear(c: (int, int, int)) -> bool:
+    def are_three_points_collinear(c: (int, int, int, int)) -> bool:
         x2_vec = a[1] - c[1]
         y2_vec = a[2] - c[2]
         return x1_vec * y2_vec == x2_vec * y1_vec
@@ -49,22 +49,37 @@ def get_square_of_distance(pointA: (int, int), pointB: (int, int)):
     return diff[0] ** 2 + diff[1] ** 2
 
 
+# p = (name, x, y, h)
+def distance_between_two_points_including_height(p1, p2):
+    points_diff = (p1[1] - p2[1], p1[2] - p2[2], p1[3] - p2[3])
+    delta_x = math.sqrt(points_diff[0] ** 2 + points_diff[1] ** 2)
+    delta_y = abs(points_diff[2])
+    road_lean_limit = 0.05
+    if delta_y / delta_x < road_lean_limit:
+        return int(math.sqrt(delta_x ** 2 + delta_y ** 2))
+    else:
+        return int(math.sqrt((delta_y / road_lean_limit) ** 2 + delta_y ** 2))
+
+
 # https://docs.scipy.org/doc/scipy/reference/tutorial/spatial.html
 # Returns list of tuples where each tuple contains:
 #       square of distance between point1 and point2 on euclidean plane,
 #       point1.id,
 #       point2.id
-def delaunay_triangulation(pointsCollection: list[(int, int, int)]):
+def delaunay_triangulation(pointsCollection: list[(int, int, int, int)]):
     edges = []
-    points = np.array([(x, y) for (name, x, y) in pointsCollection])
+    points = np.array([(x, y) for (name, x, y, h) in pointsCollection])
     tri = Delaunay(points)
 
     for triangle in tri.simplices:
         for i in range(3):
             a = triangle[i]
             b = triangle[(i + 1) % 3]
-            points_diff = points[a] - points[b]
-            euclidean_distance = points_diff[0] ** 2 + points_diff[1] ** 2
+            point_a = pointsCollection[a]
+            point_b = pointsCollection[b]
+
+            euclidean_distance = distance_between_two_points_including_height(point_a, point_b)
+
             edge_1 = (euclidean_distance, pointsCollection[a][0], pointsCollection[b][0])
             edges.append(edge_1)
 
@@ -137,31 +152,31 @@ def find_and_union(edges: list[(int, int, int)]):
 #       square of distance between point1 and point2 on euclidean plane,
 #       point1.id,
 #       point2.id
-def get_edges_when_points_collinear(pointsCollection: list[(int, int, int)]):
+def get_edges_when_points_collinear(pointsCollection: list[(int, int, int, int)]):
     pointsCollection.sort(key=lambda y: (y[1], y[2]))
     edges = []
 
     for i in range(1, pointsCollection.__len__()):
         a = pointsCollection[i - 1]
         b = pointsCollection[i]
-        squareEuclideanDist = ((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2)
-        edge_1 = (squareEuclideanDist, a[0], b[0])
+        euclideanDist = int(math.sqrt(((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2)))
+        edge_1 = (euclideanDist, a[0], b[0])
         edges.append(edge_1)
 
         if COPY_OPPOSITE_DIRECTION_TRI:
-            edge_2 = (squareEuclideanDist, b[0], a[0])
+            edge_2 = (euclideanDist, b[0], a[0])
             edges.append(edge_2)
 
     return edges
 
 
 # Returns list of points that belong to convex hull
-def convex_hull(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)]:
+def convex_hull(pointsCollection: list[(int, int, int, int)]) -> list[(int, int, int, int)]:
     if are_points_collinear(pointsCollection):
         return pointsCollection
 
     result_points = []
-    points_temp = np.array([(x, y) for (name, x, y) in pointsCollection])
+    points_temp = np.array([(x, y) for (name, x, y, h) in pointsCollection])
     hull = ConvexHull(points_temp)
 
     for point_id in hull.vertices:
@@ -171,14 +186,15 @@ def convex_hull(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)
 
 
 # Returns list of edges that belong to convex hull
-def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list[(int, int, int)]:
+def convex_hull_points_to_edges(pointsCollection: list[(int, int, int, int)]) -> list[(int, int, int)]:
     convexHullEdges = []
     n = pointsCollection.__len__()
 
     for i in range(n):
-        (pointId1, x1, y1) = pointsCollection[i]
-        (pointId2, x2, y2) = pointsCollection[(i + 1) % n]
-        euclidean_distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        (pointId1, x1, y1) = (pointsCollection[i][0], pointsCollection[i][1], pointsCollection[i][2])
+        (pointId2, x2, y2) = (pointsCollection[(i + 1) % n][0], pointsCollection[(i + 1) % n][1],
+                              pointsCollection[(i + 1) % n][2])
+        euclidean_distance = int(math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2))
         convexHullEdges.append((euclidean_distance, pointId1, pointId2))
 
         if COPY_OPPOSITE_DIRECTION_CHU:
@@ -187,9 +203,10 @@ def convex_hull_points_to_edges(pointsCollection: list[(int, int, int)]) -> list
     return convexHullEdges
 
 
-def find_center_of_polygon(regionId: int, pointsCollection: list[(int, int, int)]) -> (int, int):
+def find_center_of_polygon(regionId: int, pointsCollection: list[(int, int, int, int)]) -> (int, int, int, int):
     numOfPoints = pointsCollection.__len__()
     x_mean = sum(point[1] for point in pointsCollection) // numOfPoints
     y_mean = sum(point[2] for point in pointsCollection) // numOfPoints
+    h_mean = sum(point[3] for point in pointsCollection) // numOfPoints
 
-    return regionId, x_mean, y_mean
+    return regionId, x_mean, y_mean, h_mean

@@ -63,17 +63,21 @@ def is_point_inside_segment(dist_src_dest, dist_src_point, dist_dest_point, dist
 
 
 def calculate_height(mountainRange, point):
-    src, dest = mountainRange
+    height = 0
+    for mountain in mountainRange:
+        src, dest = mountain
 
-    dist_src_dest = calculate_distance(src, dest)
-    dist_src_point = calculate_distance(src, point)
-    dist_dest_point = calculate_distance(dest, point)
-    dist_from_line = get_distance_from_line(src, dest, point)
+        dist_src_dest = calculate_distance(src, dest)
+        dist_src_point = calculate_distance(src, point)
+        dist_dest_point = calculate_distance(dest, point)
+        dist_from_line = get_distance_from_line(src, dest, point)
 
-    if is_point_inside_segment(dist_src_dest, dist_src_point, dist_dest_point, dist_from_line):
-        return dist_from_line
-    else:
-        return int(min(dist_src_point, dist_dest_point))
+        if is_point_inside_segment(dist_src_dest, dist_src_point, dist_dest_point, dist_from_line):
+            height += int(dist_from_line)
+        else:
+            height += int(min(dist_src_point, dist_dest_point))
+
+    return height
 
 
 def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
@@ -86,9 +90,10 @@ def sample_points_for_heatmap(mountainRanges, mapHeight, mapWidth):
                 # We calculate factor and percentile to match this:
                 # https://pl.wikipedia.org/wiki/Geografia_Polski#/media/Plik:Profil_wysoko%C5%9Bciowy_Polski.svg
                 # {{0,0},{0.2,100},{0.75,200},{0.9,300},{0.95, 400}, {0.975, 600}, {0.99, 900}, {1, 2500}}
-                factor = min(max((35000 - diff) / 35000, 0), 1)  # or 35000 TODO: this
-                percentile = factor ** 3  # TODO: change to 20
-                height += int(percentile * 25)
+
+                factor = min(max((35000 - diff) / 35000, 0), 1)  # or 35000
+                percentile = factor ** 20
+                height += int(percentile * 2500)
             pointsCollection.append((height, i, j))
 
     draw_points_depending_on_value(pointsCollection)
